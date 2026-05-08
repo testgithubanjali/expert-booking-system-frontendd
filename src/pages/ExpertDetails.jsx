@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-import { useParams, Link } from "react-router-dom";
+import { useParams } from "react-router-dom";
 
 import { io } from "socket.io-client";
 
@@ -15,23 +15,46 @@ function ExpertDetails() {
 
   const [bookedSlots, setBookedSlots] = useState([]);
 
-  const fetchExpert = async () => {
-    try {
-      const { data } = await API.get(`/experts/${id}`);
-
-      setExpert(data);
-    } catch (error) {
-      console.log(error);
-    }
-  };
-
   useEffect(() => {
+    const fetchExpert = async () => {
+      try {
+        const { data } = await API.get(`/experts/${id}`);
+        setExpert(data);
+      } catch (error) {
+        console.log(error);
+      }
+    };
+
     fetchExpert();
 
-    socket.on("slotBooked", data => {
+    const handleSlotBooked = data => {
       if (data.expertId === id) {
         setBookedSlots(prev => [...prev, data.timeSlot]);
       }
-    });
+    };
+
+    socket.on("slotBooked", handleSlotBooked);
+
+    return () => {
+      socket.off("slotBooked", handleSlotBooked);
+    };
+  }, [id]);
+
+  if (!expert) {
+    return <div>Loading...</div>;
+  }
+
+  return (
+    <div>
+      <h1>{expert.name}</h1>
+      <p>{expert.specialization}</p>
+      <p>
+        <strong>Booked slots:</strong>{" "}
+        {bookedSlots.length > 0 ? bookedSlots.join(", ") : "None"}
+      </p>
+      {/* Add more details as needed */}
+    </div>
+  );
+}
 
 export default ExpertDetails;
